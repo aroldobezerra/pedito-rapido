@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    
+    <!-- Títulos e Descrição -->
+    <title>Pedido Rápido - Sistema de Pedidos para Lanchonetes</title>
+    <meta name="description" content="Sistema completo de pedidos para lanchonetes. Cardápio digital, integração WhatsApp, painel administrativo e impressão de cupons. 7 dias grátis." />
+    <meta name="keywords" content="pedidos, lanchonete, cardápio, sistema, whatsapp, impressão, pwa, app" />
+    <meta name="author" content="Pedido Rápido" />
+    
+    <!-- PWA / Web App -->
+    <meta name="theme-color" content="#f97316" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#f97316" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Pedido Rápido" />
+    <meta name="application-name" content="Pedido Rápido" />
+    <meta name="msapplication-TileColor" content="#f97316" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Ícones e Manifesto -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/logo-192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Open Graph (Compartilhamento em Redes Sociais) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://pedidorapido.com" />
+    <meta property="og:title" content="Pedido Rápido" />
+    <meta property="og:description" content="Sistema de pedidos para lanchonetes com cardápio digital e integração WhatsApp" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:site_name" content="Pedido Rápido" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Pedido Rápido" />
+    <meta name="twitter:description" content="Sistema de pedidos para lanchonetes" />
+    <meta name="twitter:image" content="/twitter-image.png" />
+    
+    <!-- Segurança -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    
+    <!-- Preload -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" />
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com" />
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Preload Critial Assets -->
+    <link rel="preload" href="/src/main.jsx" as="script" />
+    
+    <!-- Analytics (Opcional - remova se não usar) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      // gtag('config', 'G-XXXXXXXXXX'); // Descomente se usar Analytics
+    </script>
+  </head>
+  
+  <body class="bg-gray-50">
+    <!-- App Root -->
+    <div id="root"></div>
+    
+    <!-- Main Application -->
+    <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+      // Registrar Service Worker para PWA
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('/sw.js')
+            .then((registration) => {
+              console.log('✅ Service Worker registrado:', registration);
+              
+              // Verificar atualizações a cada hora
+              setInterval(() => {
+                registration.update();
+              }, 60 * 60 * 1000);
+            })
+            .catch((error) => {
+              console.log('Service Worker falhou:', error);
+            });
+        });
+
+        // Detectar nova versão e avisar ao usuário
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        });
+      }
+
+      // Notificação de Permissão
+      if ('Notification' in window && Notification.permission === 'default') {
+        // Pedir permissão de notificação na primeira visita
+        setTimeout(() => {
+          if (confirm('Deseja receber notificações de novos pedidos?')) {
+            Notification.requestPermission();
+          }
+        }, 3000);
+      }
+
+      // Detectar modo offline/online
+      window.addEventListener('online', () => {
+        console.log('✅ Voltou online');
+        // Sincronizar dados quando voltar online
+        if (window.location.pathname.includes('admin')) {
+          location.reload();
+        }
+      });
+
+      window.addEventListener('offline', () => {
+        console.log('❌ Modo offline ativado');
+        // App continua funcionando com dados cacheados
+      });
+
+      // Adicionar atalho de teclado para atualizar
+      document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+          // Forçar atualização do service worker
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+              registrations.forEach((reg) => reg.update());
+            });
+          }
+        }
+      });
+
+      // Detectar instalação da PWA
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        // Guardar evento para mostrar botão customizado
+        let deferredPrompt = e;
+        
+        // Mostrar botão de instalação
+        const installButton = document.getElementById('install-app-button');
+        if (installButton) {
+          installButton.style.display = 'block';
+          installButton.addEventListener('click', async () => {
+            if (deferredPrompt) {
+              deferredPrompt.prompt();
+              const { outcome } = await deferredPrompt.userChoice;
+              console.log(`User response: ${outcome}`);
+              deferredPrompt = null;
+            }
+          });
+        }
+      });
+
+      window.addEventListener('appinstalled', () => {
+        console.log('✅ PWA instalada com sucesso!');
+        // Esconder prompt de instalação após instalar
+        const installButton = document.getElementById('install-app-button');
+        if (installButton) {
+          installButton.style.display = 'none';
+        }
+      });
+
+      // Sincronizar dados periodicamente (Background Sync)
+      if ('serviceWorker' in navigator && 'SyncManager' in window) {
+        navigator.serviceWorker.ready.then((registration) => {
+          // Sincronizar a cada 30 minutos
+          setInterval(() => {
+            registration.sync.register('sync-orders');
+          }, 30 * 60 * 1000);
+        });
+      }
+    </script>
+
+    <!-- Loading Screen (Opcional - melhora UX) -->
+    <style>
+      #root:empty::before {
+        content: '';
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        border: 3px solid #f97316;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        z-index: 9999;
+      }
+      
+      @keyframes spin {
+        to { transform: translate(-50%, -50%) rotate(360deg); }
+      }
+    </style>
+  </body>
+</html>
